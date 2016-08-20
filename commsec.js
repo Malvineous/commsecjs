@@ -211,6 +211,12 @@ class CommsecBroker extends Broker
 	 *
 	 * Note that warnings are currently treated as errors (e.g. the warning about
 	 * placing an order when an order is already in the system.)
+	 *
+	 * @param string type
+	 *   Order type.  "Buy" or "Sell", case sensitive.
+	 *
+	 * @param object order
+	 *   See Broker.buy() or Broker.sell().
 	 */
 	cs_place_order(type, order) {
 		var self = this;
@@ -308,6 +314,13 @@ class CommsecBroker extends Broker
 			'__EVENTTARGET': '',
 			'__VIEWSTATE': viewstate,
 		};
+
+		if (order.price == null) {
+			// null price means 'at market'
+			postdata['ctl00$BodyPlaceHolder$OrderView1$ctl02$cbOrderStyleAtMarket$field']
+				= 'on';
+		}
+
 		console.log('cs_place_order_step2(): order step 2');
 		Request
 			.post({
