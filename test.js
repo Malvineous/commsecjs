@@ -33,8 +33,9 @@ b.buy({
 	stock: 'GEM',
 	quantity: 510,
 	price: '3',
-}).then(function(s) {
-	console.log('Order successful.');
-}, function(f) {
-	console.log('Order failed: ' + f);
+	id: null,
+}).then(function(order) {
+	console.log('Order successful: ' + order.id);
+}, function(order) {
+	console.log('Order failed: ' + order.error);
 });

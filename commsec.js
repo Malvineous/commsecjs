@@ -130,6 +130,10 @@ class CommsecBroker extends Broker
 		});
 	}
 
+	/// Get the price of one or more stocks.
+	/**
+	 * @see fill_prices()
+	 */
 	cs_get_market_data(stocks) {
 		console.log('cs_get_market_data()');
 		var self = this;
@@ -212,11 +216,19 @@ class CommsecBroker extends Broker
 	 * Note that warnings are currently treated as errors (e.g. the warning about
 	 * placing an order when an order is already in the system.)
 	 *
+	 * @note If there is any problem during any step, the operation will be
+	 *   started over from the beginning, up to three times before returning
+	 *   failure.  This is to handle a session timeout.  In this case the
+	 *   function will automatically attempt to log in again, then try to place
+	 *   the order from step 1, up to three times before giving up.
+	 *
 	 * @param string type
 	 *   Order type.  "Buy" or "Sell", case sensitive.
 	 *
 	 * @param object order
 	 *   See Broker.buy() or Broker.sell().
+	 *
+	 * @return Promise.
 	 */
 	cs_place_order(type, order) {
 		var self = this;
@@ -235,6 +247,13 @@ class CommsecBroker extends Broker
 						jar: self.cookiejar,
 						followRedirect: false,
 					}, function(err, response, body) {
+						if (err || response.statusCode != 200) {
+							console.log('cs_place_order(): Server returned '
+								+ response.statusCode + ': session seems to have expired');
+							self.connected = false;
+							attemptFailed(err);
+							return;
+						}
 						// Parse HTML and extract ASP.NET variables
 						var cheerio = require('cheerio');
 						let $ = cheerio.load(body);
@@ -357,7 +376,8 @@ class CommsecBroker extends Broker
 					}
 					console.log('cs_place_order_step2() returning error: ' + errorString);
 					// Fail the trade
-					rejectOrder(errorString);
+					order.error = errorString;
+					rejectOrder(order);
 					return;
 				}
 
@@ -420,25 +440,28 @@ class CommsecBroker extends Broker
 					}
 					console.log('cs_place_order_step3() returning error: ' + errorString);
 					// Fail the trade
-					rejectOrder(errorString);
+					order.error = errorString;
+					rejectOrder(order);
 					return;
 				}
-				var ctAmount = $('#ctl00_BodyPlaceHolder_OrderView1_ctl02_gvConfirmation_Underlying_ctl03_lblQty_field');
-				var confirmedAmount = 0;
-				if (ctAmount.length == 1) {
-					confirmedAmount = parseInt(ctAmount.text().replace(/,/g, ''));
+				var ctRef = $('#ctl00_BodyPlaceHolder_OrderView1_ctl02_lblReferenceNo');
+				if (ctRef.length != 1) {
+					console.log('cs_place_order_step3(): Did not get a reference number for this order');
+					order.error = 'Trade error: Did not get a reference number for this order';
+					rejectOrder(order);
+					return;
 				}
-				if (confirmedAmount == order.quantity) {
+				var ref = ctRef.text().trim();
+				if (ref.length > 0) {
+					console.log('cs_place_order_step3(): Order reference is ' + ref);
+					order.id = ref;
 					fulfillOrder(order); // finished at last
 					return;
-				} else {
-					console.log('cs_place_order_step3(): Confirmed amount '
-						+ confirmedAmount + ' does not match order of ' + order.quantity
-						+ ', returning error');
-					rejectOrder('Trade error: Tried to order ' + order.quantity
-						+ ', got ' + confirmedAmount);
-					return;
 				}
+				console.log('cs_place_order_step3(): Got an empty order reference number, failing');
+				order.error = 'Got an empty order reference number.';
+				rejectOrder(order);
+				return;
 			})
 		;
 	}
