@@ -90,6 +90,20 @@ class CommsecBroker extends Broker
 		;
 	}
 
+	/// Convert a string 'd/mm/yyyy' into a Date object.
+	static cs_parse_date(date_dmy) {
+		return new Date(
+			date_dmy.replace(
+				/([0-9]+)\/([0-9]+)\/([0-9]+)/,
+				'$3-$2-$1 UTC+1000'
+			)
+		);
+	}
+	/// Convert a Date object into a 'd/m/yyyy' string.
+	static cs_format_date(d) {
+		return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+	}
+
 	cs_connect_if_needed() {
 		// Return a resolved promise (which won't hold anything up) if we're already
 		// connected, otherwise return a connect promise.
@@ -502,6 +516,180 @@ class CommsecBroker extends Broker
 			})
 		;
 	}
+
+	/// Get a list of the 10 most recent completed orders.
+	/**
+	 * @return Promise.  On success the parameter is an array of confirmation
+	 *   items.  See cs_scrape_confirmations().
+	 */
+	cs_get_confirmations() {
+		var self = this;
+
+		return new Promise(function(fulfillOperation, rejectOperation) {
+			var fnRequest = function(retryOff, retryNow) {
+				if (!self.connected) {
+					console.log('BUG: Attempted cs_get_confirmations() when logged out');
+					retryOff();
+					rejectOperation('Cannot retrieve order confirmations when logged out.');
+					return;
+				}
+				Request
+					.get({
+						url: 'https://www2.commsec.com.au/Private/MyPortfolio/Confirmations/Confirmations.aspx',
+						jar: self.cookiejar,
+						followRedirect: false,
+					}, function(err, response, body) {
+						//console.log(body);
+
+						// If we've gotten this far then doing the whole operation again won't
+						// make any difference, so don't bother retrying any more.
+						retryOff();
+
+						var confirmations = self.cs_scrape_confirmations(body);
+						if (typeof confirmations == 'string') {
+							rejectOperation(confirmations);
+							return;
+						}
+						fulfillOperation(confirmations);
+					});
+				return;
+			};
+
+			retry(3, function(retryOff, retryNow) {
+				return self.cs_connect_if_needed()
+					.then(function() {
+						fnRequest(retryOff, retryNow);
+					});
+			}).then(function(s) {
+				// Whole process succeeded
+				fulfillOperation(s);
+			}, function(err) {
+				// All retries failed, abort the whole operation
+				rejectOperation(err);
+			});
+		});
+	}
+
+	/// Scrape the HTML on the order confirmations page and return an array.
+	/**
+	 * @param string body
+	 *   HTML content from CommSec confirmations page.
+	 *
+	 * @return Array of objects, each object being:
+	 *   - idConf, string: confirmation ID.
+	 *   - idOrder, string: order ID, matching return value from buy() or sell().
+	 *   - trade_date, Date: Date the trade took place (midnight UTC+10).
+	 *   - is_buy, bool: true for a buy, false for a sell.
+	 *   - stock, string: stock ticker code.
+	 *   - units, int: Number of units bought or sold.
+	 *   - price_approx, float: Average sold price (only to three decimal places).
+	 *   - fee, float: Fee charged, e.g. 19.95.
+	 *   - total, float: Total amount of transaction, including fee.
+	 *   - settlement_date, Date: Date the funds will settle.
+	 */
+	cs_scrape_confirmations(body) {
+		var cheerio = require('cheerio');
+		let $ = cheerio.load(body);
+
+		var table = $('#ctl00_BodyPlaceHolder_ConfirmationsView1_gdvwConfirmationDetails_Underlying');
+		if (!table) return 'cs_scrape_confirmations(): Cannot find confirmations table!';
+
+		var data = [];
+		var fnConf = function(index, element) {
+			var c = $(this).attr('class');
+			return c === 'GridRow' || c === 'GridAlternateRow';
+		};
+		table.children('tr').filter(fnConf).each(function(rowIndex, rowElement) {
+			var rows = $(rowElement).children('td');
+			data.push({
+				idConf: $(rows[0]).text().trim(),
+				idOrder: $(rows[1]).text().trim(),
+				trade_date: CommsecBroker.cs_parse_date($(rows[2]).text().trim()),
+				is_buy: $(rows[3]).text().trim() === 'B',
+				stock: $('span.StockCode', rows[4]).text().trim(),
+				units: parseInt($(rows[5]).text().trim().replace(/,/g, '')),
+				price_approx: parseFloat($(rows[6]).text().trim()),
+				fee: parseFloat($(rows[7]).text().trim().replace(/,/g, '')),
+				total: parseFloat($(rows[8]).text().trim().replace(/,/g, '')),
+				settlement_date: CommsecBroker.cs_parse_date($(rows[9]).text().trim()),
+			});
+		});
+		return data;
+	}
+
+	/// Get a list of completed orders.
+	/**
+	 * @return Promise.  On success the parameter is an array of confirmation
+	 *   items.  See cs_scrape_confirmations().
+	 */
+	cs_get_confirmations_range(date_from, date_to) {
+		var self = this;
+
+		return new Promise(function(fulfillOperation, rejectOperation) {
+			var fnRequest = function(retryOff, retryNow) {
+				if (!self.connected) {
+					console.log('BUG: Attempted cs_get_confirmations() when logged out');
+					retryOff();
+					rejectOperation('Cannot retrieve order confirmations when logged out.');
+					return;
+				}
+				Request
+					.get({
+						url: 'https://www2.commsec.com.au/Private/MyPortfolio/Confirmations/Confirmations.aspx',
+						jar: self.cookiejar,
+						followRedirect: false,
+					}, function(err, response, body) {
+						//console.log(body);
+
+						var cheerio = require('cheerio');
+						let $ = cheerio.load(body);
+						var viewstate = $('#__VIEWSTATE').val();
+						Request
+							.post({
+								url: 'https://www2.commsec.com.au/Private/MyPortfolio/Confirmations/Confirmations.aspx',
+								jar: self.cookiejar,
+								followRedirect: false,
+								form: {
+									'ctl00$BodyPlaceHolder$ConfirmationsView1$chbxBuy$field': 'on',
+									'ctl00$BodyPlaceHolder$ConfirmationsView1$chbxSell$field': 'on',
+									'ctl00$BodyPlaceHolder$ConfirmationsView1$calendarFrom$field': CommsecBroker.cs_format_date(date_from),
+									'ctl00$BodyPlaceHolder$ConfirmationsView1$calendarTo$field': CommsecBroker.cs_format_date(date_to),
+
+									'__VIEWSTATE': viewstate,
+									'__EVENTTARGET': 'ctl00$BodyPlaceHolder$ConfirmationsView1$gdvwConfirmationDetails_Underlying$TopPagerRow$btnAll$implementation',
+								},
+							}, function(err, response, body) {
+								// If we've gotten this far then doing the whole operation again won't
+								// make any difference, so don't bother retrying any more.
+								retryOff();
+
+								var confirmations = self.cs_scrape_confirmations(body);
+								if (typeof confirmations == 'string') {
+									rejectOperation(confirmations);
+									return;
+								}
+								fulfillOperation(confirmations);
+							});
+						return;
+					});
+				return;
+			};
+
+			retry(3, function(retryOff, retryNow) {
+				return self.cs_connect_if_needed()
+					.then(function() {
+						fnRequest(retryOff, retryNow);
+					});
+			}).then(function(s) {
+				// Whole process succeeded
+				fulfillOperation(s);
+			}, function(err) {
+				// All retries failed, abort the whole operation
+				rejectOperation(err);
+			});
+		});
+	}
+
 }
 
 module.exports = CommsecBroker;

@@ -41,4 +41,20 @@ b.fill_prices(stocks).then(function(s) {
 	});
 });
 
+b.cs_connect_if_needed().then(function() {
+	b.cs_get_confirmations().then(function(list) {
+		console.log('Getting confirmations succeeded:');
+		console.log(list);
+	}, function(err) {
+		console.log('Getting confirmations failed: ' + err);
+	});
+});
+
+b.cs_connect_if_needed().then(function() {
+	b.cs_get_confirmations_range(new Date('2016-01-01'), new Date('2016-01-31')).then(function(list) {
+		console.log('Getting confirmations succeeded:');
+		console.log(list);
+	}, function(err) {
+		console.log('Getting confirmations failed: ' + err);
+	});
 });
