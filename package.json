@@ -1,7 +1,7 @@
 {
-  "name": "stockbroker",
-  "version": "1.0.0",
-  "description": "Interface to online stock brokers",
+  "name": "commsecjs",
+  "version": "0.1.0",
+  "description": "Interface to CommSec trading platform",
   "main": "index.js",
   "scripts": {
     "test": "node test.js"
@@ -10,15 +10,23 @@
     "shares",
     "trading"
   ],
-  "author": {
-    "name": "Adam Nielsen",
-    "email": "malvineous@shikadi.net",
-    "url": "http://github.com/malvineous"
-  },
+  "author": "Adam Nielsen <malvineous@shikadi.net> (http://github.com/malvineous)",
   "license": "GPL-3.0",
   "dependencies": {
     "cheerio": "^0.20.0",
     "promise": "^7.1.1",
     "request": "^2.74.0"
-  }
+  },
+  "directories": {
+    "doc": "doc"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Malvineous/commsecjs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Malvineous/commsecjs/issues"
+  },
+  "homepage": "https://github.com/Malvineous/commsecjs#readme"
 }
