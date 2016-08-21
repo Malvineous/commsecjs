@@ -25,6 +25,14 @@ function retry(count, fn) {
 	});
 }
 
+/// Round a number to the given number of decimal places
+/**
+ * Unlike other solutions, 5 is rounded up: 1.005 -> 1.01
+ */
+function mathRound(value, decimals) {
+	return Number(Math.round(value+'e'+decimals)+'e-'+decimals);
+}
+
 class CommsecBroker extends Broker
 {
 	constructor() {
@@ -310,6 +318,10 @@ class CommsecBroker extends Broker
 		fulfillOperation, rejectOperation
 	) {
 		var self = this;
+
+		// CommSec only accepts orders in whole cents
+		order.price = mathRound(order.price, 2);
+
 		var postdata = {
 			// Empty if at-market is on
 			'ctl00$BodyPlaceHolder$OrderView1$ctl02$txtOrderStyleLimitPrice$field': order.price,
