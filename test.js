@@ -23,19 +23,22 @@ b.set_credentials({
 	tradpass: 'pass2'
 });
 
-/*
+
 b.fill_prices(stocks).then(function(s) {
 	console.log(stocks);
-});
-*/
 
-b.buy({
-	stock: 'GEM',
-	quantity: 510,
-	price: '3',
-	id: null,
-}).then(function(order) {
-	console.log('Order successful: ' + order.id);
-}, function(order) {
-	console.log('Order failed: ' + order.error);
+	var newprice = stocks['BHP'].price * 0.95;
+	console.log('Buying BHP at 95% of current market value (' + newprice + ')');
+	b.buy({
+		stock: 'BHP',
+		quantity: 510,
+		price: newprice,
+		id: null,
+	}).then(function(order) {
+		console.log('Order successful: ' + order.id + ' at ' + order.price);
+	}, function(order) {
+		console.log('Order failed: ' + order.error);
+	});
+});
+
 });

@@ -147,10 +147,10 @@ class CommsecBroker extends Broker
 			postdata.stockCodes += sym;
 			separator = ';';
 		}
-		var fnRequest = function(attemptComplete, attemptFailed) {
+		var fnRequest = function(retryOff, retryNow) {
 			if (!self.connected) {
 				console.log('BUG: Attempted cs_get_market_data() when logged out');
-				attemptFailed('Cannot request stock quote when logged out.');
+				retryNow('Cannot request stock quote when logged out.');
 				return;
 			}
 			Request
@@ -168,7 +168,7 @@ class CommsecBroker extends Broker
 						console.log('cs_get_market_data(): Server returned '
 							+ response.statusCode + ': session seems to have expired');
 						self.connected = false;
-						attemptFailed(err);
+						retryNow(err);
 						return;
 					}
 					var data = JSON.parse(CommsecBroker.cs_repair_json(body.d));
@@ -180,18 +180,18 @@ class CommsecBroker extends Broker
 							// TODO: Issue sensitive-announcement alert
 						}
 					}
-					attemptComplete();
+					retryOff();
 				})
 			;
 		};
-		return retry(3, function(attemptComplete, attemptFailed) {
+		return retry(3, function(retryOff, retryNow) {
 			if (!self.connected) {
 				console.log('cs_get_market_data(): Reconnecting then retrying');
 				self.cs_connect().then(function() {
-					fnRequest(attemptComplete, attemptFailed);
+					fnRequest(retryOff, retryNow);
 				});
 			} else {
-				fnRequest(attemptComplete, attemptFailed);
+				fnRequest(retryOff, retryNow);
 			}
 		});
 	}
@@ -233,14 +233,16 @@ class CommsecBroker extends Broker
 	cs_place_order(type, order) {
 		var self = this;
 
-		return new Promise(function(fulfillOrder, rejectOrder) {
-			var fnRequest = function(attemptComplete, attemptFailed) {
+		return new Promise(function(fulfillOperation, rejectOperation) {
+			var fnRequest = function(retryOff, retryNow) {
+				console.log('cs_place_order(): order step 1');
 				if (!self.connected) {
 					console.log('BUG: Attempted cs_place_order() when logged out');
-					attemptFailed('Cannot place an order when logged out.');
+					order.error = 'Cannot place an order when logged out.';
+					retryOff();
+					rejectOperation(order);
 					return;
 				}
-				console.log('cs_place_order(): order step 1');
 				Request
 					.get({
 						url: 'https://www2.commsec.com.au/Private/EquityTrading/AustralianShares/PlaceOrder.aspx',
@@ -251,30 +253,27 @@ class CommsecBroker extends Broker
 							console.log('cs_place_order(): Server returned '
 								+ response.statusCode + ': session seems to have expired');
 							self.connected = false;
-							attemptFailed(err);
+							retryNow(err);
 							return;
 						}
 						// Parse HTML and extract ASP.NET variables
 						var cheerio = require('cheerio');
 						let $ = cheerio.load(body);
 						var viewstate = $('#__VIEWSTATE').val();
-						self.cs_place_order_step2(type, order, viewstate, attemptFailed,
-							fulfillOrder, rejectOrder);
+						self.cs_place_order_step2(type, order, viewstate, retryOff,
+							retryNow, fulfillOperation, rejectOperation);
 					});
 				return;
 			};
 
-			retry(3, function(attemptDone, attemptFailed) {
+			retry(3, function(retryOff, retryNow) {
 				return self.cs_connect_if_needed()
 					.then(function() {
-						fnRequest(attemptDone, attemptFailed);
+						fnRequest(retryOff, retryNow);
 					});
-			}).then(function(s) {
-				// Whole process succeeded
-				fulfillOrder(s);
-			}, function(err) {
+			}).then(null, function(err) {
 				// All retries failed, abort the whole operation
-				rejectOrder(err);
+				rejectOperation(err);
 			});
 		});
 	}
@@ -283,9 +282,33 @@ class CommsecBroker extends Broker
 	/**
 	 * This supplies details about the trade - stock, amounts, etc.
 	 *
+	 * @param function retryOff
+	 *   This function is called when the operation has completed in a way that
+	 *   does not require it to be retried.  This will be called on success, or
+	 *   on a failure that will still be present if the operation is tried again.
+	 *
+	 * @param function retryNow
+	 *   This function is called when the operation has failed in a way that
+	 *   suggests a transient error, such as the session having expired.  Once
+	 *   this function is called, the operation will be started over from the
+	 *   beginning.
+	 *
+	 * @param function fulfillOperation
+	 *   This function is called when the operation has completed successfully.
+	 *   Note that on success, both retryOff() and fulfillOperation() will be
+	 *   called.  The parameter to this function will be returned to the library
+	 *   user in their then() success handler.
+	 *
+	 * @param function rejectOperation
+	 *   This function is called when the operation has failed due to a permanent
+	 *   error, e.g. insufficient funds.  The parameter to this function will be
+	 *   returned to the library user in their then() failure handler.
+	 *
 	 * @return undefined.  The operation happens asynchronously.
 	 */
-	cs_place_order_step2(type, order, viewstate, attemptFailed, fulfillOrder, rejectOrder) {
+	cs_place_order_step2(type, order, viewstate, retryOff, retryNow,
+		fulfillOperation, rejectOperation
+	) {
 		var self = this;
 		var postdata = {
 			// Empty if at-market is on
@@ -350,9 +373,9 @@ class CommsecBroker extends Broker
 			}, function(err, response, body) {
 				if (err || response.statusCode != 200) {
 					console.log('cs_place_order_step2(): Server returned '
-											+ response.statusCode + ': session seems to have expired');
+						+ response.statusCode + ': session seems to have expired');
 					self.connected = false;
-					attemptFailed(err); // will trigger retry
+					retryNow(err); // will trigger retry
 					return;
 				}
 
@@ -377,15 +400,19 @@ class CommsecBroker extends Broker
 					console.log('cs_place_order_step2() returning error: ' + errorString);
 					// Fail the trade
 					order.error = errorString;
-					rejectOrder(order);
+					rejectOperation(order);
 					return;
 				}
 
-				var viewstate2 = $('#__VIEWSTATE').val();
-				var p1 = $('input[name="ctl00$BodyPlaceHolder$OrderView1$ctl00"]').val();
-				var p2 = $('input[name="ctl00$BodyPlaceHolder$OrderView1$ctl01"]').val();
-				self.cs_place_order_step3(type, order, viewstate2, p1, p2,
-					attemptFailed, fulfillOrder, rejectOrder);
+				var nextPostdata = {
+					'ctl00$BodyPlaceHolder$OrderView1$ctl00': $('input[name="ctl00$BodyPlaceHolder$OrderView1$ctl00"]').val(),
+					'ctl00$BodyPlaceHolder$OrderView1$ctl01': $('input[name="ctl00$BodyPlaceHolder$OrderView1$ctl01"]').val(),
+					'ctl00$BodyPlaceHolder$OrderView1$ctl02$ucOrderSpecification$tradingPwd$tradingPwdCGTextBox$field': self.creds.tradpass,
+					'__VIEWSTATE': $('#__VIEWSTATE').val(),
+					'__EVENTTARGET': 'ctl00$BodyPlaceHolder$OrderView1$ctl02$ucOrderSpecification$btnSubmitOrder$implementation$field',
+				};
+				self.cs_place_order_step3(type, order, nextPostdata,
+					retryNow, retryOff, fulfillOperation, rejectOperation);
 			})
 		;
 	}
@@ -396,16 +423,10 @@ class CommsecBroker extends Broker
 	 *
 	 * @return undefined.  The operation happens asynchronously.
 	 */
-	cs_place_order_step3(type, order, viewstate, p1, p2, attemptFailed, fulfillOrder, rejectOrder) {
+	cs_place_order_step3(type, order, postdata, retryNow, retryOff,
+		fulfillOperation, rejectOperation
+	) {
 		var self = this;
-		var postdata = {
-			'ctl00$BodyPlaceHolder$OrderView1$ctl02$ucOrderSpecification$tradingPwd$tradingPwdCGTextBox$field': self.creds.tradpass,
-
-			'__EVENTTARGET': 'ctl00$BodyPlaceHolder$OrderView1$ctl02$ucOrderSpecification$btnSubmitOrder$implementation$field',
-			'__VIEWSTATE': viewstate,
-			'ctl00$BodyPlaceHolder$OrderView1$ctl00': p1,
-			'ctl00$BodyPlaceHolder$OrderView1$ctl01': p2,
-		};
 		console.log('cs_place_order_step3(): order step 3');
 		Request
 			.post({
@@ -418,9 +439,13 @@ class CommsecBroker extends Broker
 					console.log('cs_place_order_step3(): Server returned '
 						+ response.statusCode + ': session seems to have expired');
 					self.connected = false;
-					attemptFailed(err); // will trigger retry
+					retryNow(err); // will trigger retry
 					return;
 				}
+
+				// If we've gotten this far then doing the whole operation again won't
+				// make any difference, so don't bother retrying any more.
+				retryOff();
 
 				var cheerio = require('cheerio');
 				let $ = cheerio.load(body);
@@ -441,26 +466,26 @@ class CommsecBroker extends Broker
 					console.log('cs_place_order_step3() returning error: ' + errorString);
 					// Fail the trade
 					order.error = errorString;
-					rejectOrder(order);
+					rejectOperation(order);
 					return;
 				}
 				var ctRef = $('#ctl00_BodyPlaceHolder_OrderView1_ctl02_lblReferenceNo');
 				if (ctRef.length != 1) {
 					console.log('cs_place_order_step3(): Did not get a reference number for this order');
 					order.error = 'Trade error: Did not get a reference number for this order';
-					rejectOrder(order);
+					rejectOperation(order);
 					return;
 				}
 				var ref = ctRef.text().trim();
 				if (ref.length > 0) {
 					console.log('cs_place_order_step3(): Order reference is ' + ref);
 					order.id = ref;
-					fulfillOrder(order); // finished at last
+					fulfillOperation(order); // finished at last
 					return;
 				}
 				console.log('cs_place_order_step3(): Got an empty order reference number, failing');
 				order.error = 'Got an empty order reference number.';
-				rejectOrder(order);
+				rejectOperation(order);
 				return;
 			})
 		;
