@@ -75,6 +75,21 @@ class Broker
 	history(date_from, date_to) {
 		console.log("BUG: Broker does not provide order history.")
 	}
+
+	/// Calculate how much fee the broker will charge for a proposed transaction.
+	/**
+	 * @param int unit_price_cents
+	 *   Proposed price of the stock, in cents (1995 = $19.95).
+	 *
+	 * @param int count
+	 *   Number of units to trade.
+	 *
+	 * @param bool is_buy
+	 *   True if this is a buy, false if a sell.
+	 */
+	calculate_fee(unit_price_cents, count, is_buy) {
+		console.log("BUG: Broker cannot calculate transaction fee.")
+	}
 }
 
 module.exports = Broker;

@@ -105,6 +105,17 @@ class CommsecBroker extends Broker
 		;
 	}
 
+	calculate_fee(unit_price_cents, count, is_buy) {
+		var total = unit_price_cents * count;
+		if (total <= 1000000) {
+			return 1995;
+		} else if (total <= 2000000) {
+			return 2995;
+		} else {
+			return total * 0.0012;
+		}
+	}
+
 	/// Convert JavaScript objects into JSON.
 	/**
 	 * This is needed because CommSec returns stock prices as a JavaScript object,
