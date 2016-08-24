@@ -1,6 +1,6 @@
 {
   "name": "commsec",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Interface to CommSec trading platform",
   "main": "index.js",
   "scripts": {
