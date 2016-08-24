@@ -41,6 +41,40 @@ class Broker
 	sell(order) {
 		console.log("BUG: Broker does not provide sell orders.")
 	}
+
+	/// Check the status of an order.
+	/**
+	 * Find out whether an order has been processed yet.
+	 *
+	 * @return Promise.  The fulfill function is passed an object with these
+	 *   members:
+	 *     - trade_id, string: ID number for the trade
+	 *     - order_id, string: ID number from the original order as returned from
+	 *       the original buy() or sell().
+	 *     - trade_date, Date: Date the trade took place (midnight UTC+10).
+	 *     - is_buy, bool: true for a buy, false for a sell.
+	 *     - stock, string: stock ticker code.
+	 *     - units, int: Number of units bought or sold.
+	 *     - price_approx, float: Average sold price (only to one decimal place), cents.
+	 *     - fee_cents, int: Fee charged, e.g. 1995 for $19.95.
+	 *     - total_cents, int: Total amount of transaction, including fee.
+	 *     - settlement_date, Date: Date the funds will settle.
+	 */
+	status(order_id) {
+		console.log("BUG: Broker does not provide order status.")
+	}
+
+	/// Retrieve historical orders.
+	/**
+	 * Retrieve a list of processed orders between the two given dates.
+	 *
+	 * @return Promise.  The fulfill function is given one parameter, which is an
+	 *   array of objects, with each object matching the one obtained from
+	 *   status().
+	 */
+	history(date_from, date_to) {
+		console.log("BUG: Broker does not provide order history.")
+	}
 }
 
 module.exports = Broker;

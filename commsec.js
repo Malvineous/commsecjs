@@ -71,6 +71,40 @@ class CommsecBroker extends Broker
 		;
 	}
 
+	status(order_id) {
+		var self = this;
+		return this.cs_connect_if_needed()
+			.then(function() {
+				return new Promise(function(fulfill, reject) {
+					var date_from = new Date();
+					date_from.setDate(date_from.getDate() - 4); // go back four days (one day plus long weekend)
+					var date_to = new Date(); // "now"
+					self.cs_get_confirmations_range(date_from, date_to).then(function(trade) {
+						// Look through all the trades for the order ID
+						for (var t in trade) {
+							if (t.order_id == order_id) {
+								fulfill(t);
+								return;
+							}
+						}
+						reject('Unable to find order within last four days trades: ' + order_id);
+					}, function(err) {
+						reject(err);
+					});
+				});
+			})
+		;
+	}
+
+	history(date_from, date_to) {
+		var self = this;
+		return this.cs_connect_if_needed()
+			.then(function() {
+				return self.cs_get_confirmations_range(date_from, date_to);
+			})
+		;
+	}
+
 	/// Convert JavaScript objects into JSON.
 	/**
 	 * This is needed because CommSec returns stock prices as a JavaScript object,
@@ -579,17 +613,8 @@ class CommsecBroker extends Broker
 	 * @param string body
 	 *   HTML content from CommSec confirmations page.
 	 *
-	 * @return Array of objects, each object being:
-	 *   - idConf, string: confirmation ID.
-	 *   - idOrder, string: order ID, matching return value from buy() or sell().
-	 *   - trade_date, Date: Date the trade took place (midnight UTC+10).
-	 *   - is_buy, bool: true for a buy, false for a sell.
-	 *   - stock, string: stock ticker code.
-	 *   - units, int: Number of units bought or sold.
-	 *   - price_approx, float: Average sold price (only to three decimal places).
-	 *   - fee, float: Fee charged, e.g. 19.95.
-	 *   - total, float: Total amount of transaction, including fee.
-	 *   - settlement_date, Date: Date the funds will settle.
+	 * @return Array of objects, each object being the same as the return object
+	 *   for status().
 	 */
 	cs_scrape_confirmations(body) {
 		var cheerio = require('cheerio');
