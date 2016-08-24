@@ -122,6 +122,10 @@ class CommsecBroker extends Broker
 		console.log('cs_connect(): Logging in');
 		var self = this;
 		return new Promise(function(fulfill, reject) {
+			if (!self.creds) {
+				reject('Missing CommSec credentials!');
+				return;
+			}
 			Request
 				.post({
 					url: 'https://www2.commsec.com.au/Public/HomePage/Login.aspx',
