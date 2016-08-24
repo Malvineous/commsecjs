@@ -105,12 +105,12 @@ class CommsecBroker extends Broker
 		;
 	}
 
-	calculate_fee(unit_price_cents, count, is_buy) {
-		var total = unit_price_cents * count;
-		if (total <= 1000000) {
-			return 1995;
-		} else if (total <= 2000000) {
-			return 2995;
+	calculate_fee(unit_price, count, is_buy) {
+		var total = unit_price * count;
+		if (total <= 10000) {
+			return 19.95;
+		} else if (total <= 20000) {
+			return 29.95;
 		} else {
 			return total * 0.0012;
 		}
@@ -651,8 +651,8 @@ class CommsecBroker extends Broker
 				units: (is_buy ? 1 : -1) * parseInt($(rows[5]).text().trim().replace(/,/g, '')),
 				price_approx: 100 * parseFloat($(rows[6]).text().trim()),
 				// Fee is always negative, because it's always money we lose
-				fee_cents: -1 * Math.trunc(0.5 + 100 * parseFloat($(rows[7]).text().trim().replace(/,/g, ''))),
-				total_cents: (is_buy ? -1 : 1) * Math.trunc(0.5 + 100 * parseFloat($(rows[8]).text().trim().replace(/,/g, ''))),
+				fee: -1 * parseFloat($(rows[7]).text().trim().replace(/,/g, '')),
+				total: (is_buy ? -1 : 1) * parseFloat($(rows[8]).text().trim().replace(/,/g, '')),
 				settlement_date: CommsecBroker.cs_parse_date($(rows[9]).text().trim()),
 			});
 		});
