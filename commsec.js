@@ -641,16 +641,18 @@ class CommsecBroker extends Broker
 		};
 		table.children('tr').filter(fnConf).each(function(rowIndex, rowElement) {
 			var rows = $(rowElement).children('td');
+			var is_buy = $(rows[3]).text().trim() === 'B';
 			data.push({
-				idConf: $(rows[0]).text().trim(),
-				idOrder: $(rows[1]).text().trim(),
+				trade_id: $(rows[0]).text().trim(),
+				order_id: $(rows[1]).text().trim(),
 				trade_date: CommsecBroker.cs_parse_date($(rows[2]).text().trim()),
-				is_buy: $(rows[3]).text().trim() === 'B',
+				is_buy: is_buy > 0,
 				stock: $('span.StockCode', rows[4]).text().trim(),
-				units: parseInt($(rows[5]).text().trim().replace(/,/g, '')),
-				price_approx: parseFloat($(rows[6]).text().trim()),
-				fee: parseFloat($(rows[7]).text().trim().replace(/,/g, '')),
-				total: parseFloat($(rows[8]).text().trim().replace(/,/g, '')),
+				units: (is_buy ? 1 : -1) * parseInt($(rows[5]).text().trim().replace(/,/g, '')),
+				price_approx: 100 * parseFloat($(rows[6]).text().trim()),
+				// Fee is always negative, because it's always money we lose
+				fee_cents: -1 * Math.trunc(0.5 + 100 * parseFloat($(rows[7]).text().trim().replace(/,/g, ''))),
+				total_cents: (is_buy ? -1 : 1) * Math.trunc(0.5 + 100 * parseFloat($(rows[8]).text().trim().replace(/,/g, ''))),
 				settlement_date: CommsecBroker.cs_parse_date($(rows[9]).text().trim()),
 			});
 		});
