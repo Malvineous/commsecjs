@@ -183,21 +183,21 @@ class CommsecBroker extends Broker
 						'__EVENTTARGET': '',
 					}
 				})
-			.on('response', function(response) {
-				if (response.statusCode == 302) {
-					console.log('cs_connect(): Logged in successfully');
-					self.connected = true;
-					fulfill();
-				}
-			})
-			.on('error', function(err) {
-				console.log(err);
-				console.log(response);
-				console.log('cs_connect(): Login failed');
-				self.connected = false;
-				reject(err);
-			})
-		;
+				.on('response', function(response) {
+					if (response.statusCode == 302) {
+						console.log('cs_connect(): Logged in successfully');
+						self.connected = true;
+						fulfill();
+					}
+				})
+				.on('error', function(err) {
+					console.log(err);
+					console.log(response);
+					console.log('cs_connect(): Login failed');
+					self.connected = false;
+					reject(err);
+				})
+			;
 		});
 	}
 
@@ -245,13 +245,13 @@ class CommsecBroker extends Broker
 					var data = JSON.parse(CommsecBroker.cs_repair_json(body.d));
 					var priceData = data[0].PriceData;
 					for (var sym in priceData) {
-						stocks[sym].price = priceData[sym].Last;
-						stocks[sym].volume = priceData[sym].Volume.replace(/,/g, '');
+						stocks[sym].price = parseFloat(priceData[sym].Last);
+						stocks[sym].volume = parseInt(priceData[sym].Volume.replace(/,/g, ''));
 						if (priceData[sym].SensitiveAnnouncement != 'False') {
 							// TODO: Issue sensitive-announcement alert
 						}
 					}
-					retryOff();
+					retryOff(stocks);
 				})
 			;
 		};
