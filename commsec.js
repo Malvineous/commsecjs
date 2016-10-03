@@ -107,12 +107,15 @@ class CommsecBroker extends Broker
 
 	calculate_fee(unit_price, count, is_buy) {
 		var total = unit_price * count;
-		if (total <= 10000) {
-			return 19.95;
-		} else if (total <= 20000) {
-			return 29.95;
+		if (total < 0) {
+			// Make the mistake obvious
+			return -9999999999;
+		} else if (total <= 10000) {
+			return -19.95;
+		} else if (total <= 25000) {
+			return -29.95;
 		} else {
-			return total * 0.0012;
+			return total * -0.0012;
 		}
 	}
 
