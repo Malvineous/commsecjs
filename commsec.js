@@ -149,7 +149,12 @@ class CommsecBroker extends Broker
 	}
 	/// Convert a Date object into a 'd/m/yyyy' string.
 	static cs_format_date(d) {
-		return d.getDate() + '/' + (d.getMonth() + 1) + '/' + d.getFullYear();
+		var localTime = new Date();
+		// Add 10 hours (doesn't need to be 11 because the time originally came from
+		// Brisbane, so 0:00 -> 10:00 which is sent to CommSec who interpret it as
+		// 10:00 local (Sydney) time.
+		localTime.setTime(d.getTime() + 10*60*60*1000);
+		return localTime.getDate() + '/' + (localTime.getMonth() + 1) + '/' + localTime.getFullYear();
 	}
 
 	cs_connect_if_needed() {
