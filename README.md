@@ -1,6 +1,6 @@
 CommSec trading interface for node.js
 =====================================
-**Copyright 2016 Adam Nielsen <<malvineous@shikadi.net>>**
+**Copyright 2016-2017 Adam Nielsen <<malvineous@shikadi.net>>**
 
 This is a node.js interface to the CommSec website.  Since CommSec offer no
 public API, this script works by accessing the normal website.  It uses some
@@ -16,6 +16,9 @@ Installation
 
 Example
 -------
+
+See `test.js` for a more detailed example.
+
 
 ```javascript
 var Broker = require('commsec');
