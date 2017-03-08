@@ -193,9 +193,20 @@ class CommsecBroker extends Broker
 				})
 				.on('response', function(response) {
 					if (response.statusCode == 302) {
-						console.log('cs_connect(): Logged in successfully');
-						self.connected = true;
-						fulfill();
+						var result = response.headers.location;
+						if (result.match(/Login\.aspx?/)) {
+							var reason = /.*LoginResult=(.*)/.exec(result)[1];
+							console.log('Reason:', reason);
+							if (reason != undefined) {
+								self.connected = false;
+								reject('CommSec login failed, reason=' + reason);
+								return;
+							}
+						} else {
+							console.log('cs_connect(): Logged in successfully');
+							self.connected = true;
+							fulfill();
+						}
 					}
 				})
 				.on('error', function(err) {
