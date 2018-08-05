@@ -1,6 +1,6 @@
 {
   "name": "commsec",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "description": "Interface to CommSec trading platform",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,10 @@
   ],
   "author": "Adam Nielsen <malvineous@shikadi.net> (http://github.com/malvineous)",
   "license": "GPL-3.0",
-  "dependencies": {},
+  "dependencies": {
+    "fetch-cookie": "^0.7.2",
+    "node-fetch": "^2.2.0"
+  },
   "directories": {},
   "devDependencies": {},
   "repository": {
