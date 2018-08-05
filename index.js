@@ -308,30 +308,31 @@ class CommSec
 
 		if (jsonResponse) jsonResponse = await jsonResponse;
 
-		if (retries === 0) {
-			let msg;
-			if (jsonResponse) {
-				if (jsonResponse.message) {
-					msg = jsonResponse.message;
-				} else {
-					console.error('BUG: Need to handle this JSON response type!', jsonResponse);
-					msg = JSON.stringify(jsonResponse);
-				}
-			} else {
-				// Not a JSON response
-				msg = txtResponse;
-			}
-			msg = 'CommSec says: "' + msg + '"';
-			if (f.status === 403) {
-				throw new AccessDeniedError(msg);
-			} else {
-				throw new Error(msg);
-			}
+		if ((f.status === 403) && (retries > 0)) {
+			// Probably got logged out, try again after logging in
+			await this.login();
+			return this.call(service, params, retries - 1);
 		}
 
-		// Try again after logging in
-		await this.login();
-		return this.call(service, params, retries - 1);
+		// No more retries left, do something about the failure.
+		let msg;
+		if (jsonResponse) {
+			if (jsonResponse.message) {
+				msg = jsonResponse.message;
+			} else {
+				console.error('BUG: Need to handle this JSON response type!', jsonResponse);
+				msg = JSON.stringify(jsonResponse);
+			}
+		} else {
+			// Not a JSON response
+			msg = txtResponse;
+		}
+		msg = 'CommSec says: "' + msg + '"';
+		if (f.status === 403) {
+			throw new AccessDeniedError(msg);
+		} else {
+			throw new Error(msg);
+		}
 	}
 };
 
