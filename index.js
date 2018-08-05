@@ -46,6 +46,8 @@ class CommSec
 	 *       the device ID if known.  Mandatory for PIN login.
 	 *     - loginType: "pin" or "password".
 	 *     - password: Actual PIN or password as a string.
+	 *     - tradingPassword: Optional password only required to call
+	 *       functions that perform trades.
 	 *
 	 * The app works as follows:
 	 *
@@ -81,6 +83,9 @@ class CommSec
 				"devicePlatform": "nodejs", // "android" in app
 				...creds,
 			};
+			this.tradingPassword = this.creds.tradingPassword;
+			// We don't need to pass this to the login call.
+			delete this.creds.tradingPassword;
 		}
 
 		try {

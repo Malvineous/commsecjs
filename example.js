@@ -38,6 +38,9 @@ async function run()
 		"deviceId": deviceId,
 		"loginType": "password",
 		"password": "secret",
+		// The trading password is optional and not needed to view prices
+		// or holdings.
+		"tradingPassword": "supersecret",
 	};
 
 	// If you have a PIN set up and have remembered the device ID from an earlier
@@ -48,6 +51,7 @@ async function run()
 		"deviceId": "abcdefghijklmnopqrstuvwxyz0123456789%3d",
 		"loginType": "pin",
 		"password": "1234",
+		"tradingPassword": "supersecret",
 	};
 	*/
 
