@@ -12,14 +12,8 @@
   ],
   "author": "Adam Nielsen <malvineous@shikadi.net> (http://github.com/malvineous)",
   "license": "GPL-3.0",
-  "dependencies": {
-    "cheerio": "^0.20.0",
-    "promise": "^7.1.1",
-    "request": "^2.74.0"
-  },
-  "directories": {
-    "doc": "doc"
-  },
+  "dependencies": {},
+  "directories": {},
   "devDependencies": {},
   "repository": {
     "type": "git",
