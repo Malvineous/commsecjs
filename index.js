@@ -167,11 +167,11 @@ class CommSec
 			from = new Date();
 			from.setMonth(from.getMonth() - 1);
 		}
-		const unixFrom = from.getTime() / 1000;
+		const unixFrom = Math.round(from.getTime() / 1000, 0);
 		return this.get('getorders', {
 			accountNumber: account || this.defaultAccount,
 			fromDateTimeStamp: unixFrom,
-			maxLength: limit,
+			maxLength: limit || 20,
 		});
 	}
 

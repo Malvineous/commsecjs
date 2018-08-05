@@ -107,6 +107,30 @@ async function run()
 		console.log('Error retrieving holdings:', e.message);
 	}
 
+	// Show any pending or cancelled orders.
+	try {
+		let o = await commsec.getOrders();
+		console.log('Pending orders');
+		o.outstandingOrders.forEach(order => {
+			console.log(` - ${order.orderId}: ${order.stockCode}, ${order.qty} @ ${order.limitPrice}`);
+		});
+		if (o.outstandingOrders.length === 0) console.log(' - None');
+
+		console.log('Cancelled orders');
+		o.cancelledOrders.forEach(order => {
+			console.log(` - ${order.orderId}: ${order.stockCode}, ${order.qty} @ ${order.limitPrice}`);
+		});
+		if (o.cancelledOrders.length === 0) console.log(' - None');
+
+		console.log('Executed orders');
+		o.executedOrders.forEach(order => {
+			console.log(` - ${order.orderId}: ${order.stockCode}, ${order.qty} @ ${order.limitPrice}`);
+		});
+		if (o.executedOrders.length === 0) console.log(' - None');
+	} catch (e) {
+		console.log('Error retrieving orders:', e.message);
+	}
+
 	// This example shows polling of stocks.  These stocks do not have to be on a
 	// watchlist.  When the value is returned, a hash is supplied.  This hash is
 	// included in subsequent requests so that data is only returned when it has

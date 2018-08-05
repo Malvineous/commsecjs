@@ -14,9 +14,9 @@ interface so there is now only a lightweight wrapper around the API calls.
 * Watchlists: retrieval with prices.
 * Live data: arbitrary lists of stocks via polling only (API limitation).  The CommSec app polls once a second.
 * Holdings: list stocks owned, purchase price, etc.
+* Order status and history: See pending, executed and cancelled orders.
 
 #### What is not yet supported?
-* Order status and history: Implemented but untested.
 * Trading: Coming soon.
 * Market-sensitive announcements.
   * These can be detected through the watchlists already but there's no method to get further info yet.
