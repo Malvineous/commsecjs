@@ -183,6 +183,37 @@ class CommSec
 		});
 	}
 
+	/// Place an order onto the market.
+	/**
+	 * @param object order
+	 *   Order details.  Object with the following properties:
+	 *     - accountNumber: [Optional] Account to order through.
+	 *     - expiry: '20 DAYS', 'TODAY'
+	 *     - limitPrice: 1.23
+	 *     - orderValue: 1.23 (same as limitPrice?)
+	 *     - orderType: 'BUY', sell?
+	 *     - priceType: 'MARKET', 'LIMIT'.
+	 *
+	 * @return Promise resolving to Object with properties:
+	 *   - orderStatus: 'PLACED'
+	 *   - reference: 'N12345' (order number)
+	 *   - status: standard property 'success' or 'fail'
+	 */
+	async placeOrder(order)
+	{
+		const finalOrder = {
+			'accountNumber': this.defaultAccount,
+			'requestToken': this.nextRequestToken,
+			'brokerage': 10,
+			'enableTradingPassword': true,
+			'settlement': 'CHESS',
+			'step': 2,
+			'tradingPassword': this.tradingPassword || '',
+			...order,
+		};
+		return this.post('placeneworder', finalOrder);
+	}
+
 	/// Cancel an order already in the market.
 	/**
 	 * @note Cancelling an order that has already been cancelled will

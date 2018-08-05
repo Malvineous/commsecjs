@@ -135,6 +135,22 @@ async function run()
 		console.log('Error retrieving orders:', e.message);
 	}
 
+	// Buy some shares.
+	try {
+		let o = await commsec.placeOrder({
+			'code': 'CBA',
+			'orderType': 'BUY',
+			'limitPrice': 1.23,
+			'orderValue': 1.23,
+			'priceType': 'LIMIT',
+			'expiry': '20 DAYS',
+			'quantity': 100,
+		});
+		console.log('Placed order:', o);
+	} catch (e) {
+		console.log('Error placing order:', e.message);
+	}
+
 	// Cancel an order already in the market.
 	try {
 		let o = await commsec.cancelOrder(12345);
