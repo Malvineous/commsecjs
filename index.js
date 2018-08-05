@@ -293,7 +293,7 @@ class CommSec
 		let jsonResponse, txtResponse;
 		const contentType = f.headers.get("content-type");
 		if (contentType && contentType.indexOf("application/json") !== -1) {
-			jsonResponse = f.json();
+			jsonResponse = await f.json();
 		} else {
 			txtResponse = await f.text();
 		}
@@ -301,7 +301,6 @@ class CommSec
 		if (this.debugResponses) {
 			let msg;
 			if (jsonResponse) {
-				jsonResponse = await jsonResponse;
 				msg = JSON.stringify(jsonResponse);
 			} else {
 				msg = txtResponse;
@@ -310,12 +309,15 @@ class CommSec
 		}
 
 		if (f.status === 200) {
+			if (jsonResponse && jsonResponse.requestToken) {
+				// Save the request token for the next time we need it.
+				this.nextRequestToken = jsonResponse.requestToken;
+				debug('Saving request token:', this.nextRequestToken);
+			}
 			return jsonResponse;
 		}
 
 		// If we get this far, there was an error.
-
-		if (jsonResponse) jsonResponse = await jsonResponse;
 
 		if ((f.status === 403) && (retries > 0)) {
 			// Probably got logged out, try again after logging in
