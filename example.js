@@ -135,6 +135,18 @@ async function run()
 		console.log('Error retrieving orders:', e.message);
 	}
 
+	// Cancel an order already in the market.
+	try {
+		let o = await commsec.cancelOrder(12345);
+		if (o.orderDidCancel) {
+			console.log('Cancelled order:', o);
+		} else (
+			console.log('Could not cancel order:', o);
+		}
+	} catch (e) {
+		console.log('Error cancelling order:', e.message);
+	}
+
 	// This example shows polling of stocks.  These stocks do not have to be on a
 	// watchlist.  When the value is returned, a hash is supplied.  This hash is
 	// included in subsequent requests so that data is only returned when it has

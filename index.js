@@ -183,6 +183,31 @@ class CommSec
 		});
 	}
 
+	/// Cancel an order already in the market.
+	/**
+	 * @note Cancelling an order that has already been cancelled will
+	 *   still succeed.
+	 *
+	 * @param int orderId
+	 *   Order ID (not order number) returned by getOrders().
+	 *
+	 * @return Object with properties:
+	 *   - orderDidCancel: true if cancelled
+	 *   - status: standard property 'success' or 'fail'
+	 */
+	async cancelOrder(orderId)
+	{
+		return this.post(
+			'cancelorder',
+			{
+				'accountId': this.defaultAccount,
+				'orderId': orderId,
+				'requestToken': this.nextRequestToken,
+				'tradingPassword': this.tradingPassword || '',
+			}
+		);
+	}
+
 	/// Retrieve prices for an arbitrary list of stocks.
 	/**
 	 * @param Object stockList
