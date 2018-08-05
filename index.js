@@ -37,7 +37,7 @@ class CommSec
 		this.debugResponses = (opts && opts.dumpServerResponses) || false;
 	}
 
-	/// Log in to the server
+	/// Log in to the server.
 	/**
 	 * @param object creds
 	 *   Credentials.  Object with the following properties:
@@ -109,7 +109,7 @@ class CommSec
 		}
 	}
 
-	// UNTESTED
+	/// Log out from the server.
 	async logout()
 	{
 		const debug = this.getDebug('logout');
@@ -117,6 +117,21 @@ class CommSec
 		return this.post(
 			'logout', null, 0 // no retries
 		);
+	}
+
+	/// Retrieve a list of the current holdings.
+	/**
+	 * @param int ac
+	 *   [Optional] Account number to query.  Omit for the default
+	 *   account.
+	 *
+	 * @return Promise resolving to an array of holdings.
+	 */
+	async getHoldings(ac)
+	{
+		return this.get('getholdings', {
+			accountId: ac || this.defaultAccount,
+		});
 	}
 
 	/// Retrieve all the watchlists and prices.
@@ -216,10 +231,12 @@ class CommSec
 	/// Internal function to construct GET API calls.
 	/*private*/ async get(service, params, retries = 1)
 	{
-		// TODO: params is untested
-		return this.call(service, {
-			body: params,
-		}, retries);
+		let query = Object.keys(params)
+			.map(k => (
+				encodeURIComponent(k) + '=' + encodeURIComponent(params[k]))
+			)
+			.join('&');
+		return this.call(service + '?' + query, null, retries);
 	}
 
 	/// Internal function to issue the API call itself.

@@ -13,6 +13,7 @@ interface so there is now only a lightweight wrapper around the API calls.
 * Login: via password or PIN.
 * Watchlists: retrieval with prices.
 * Live data: arbitrary lists of stocks via polling only (API limitation).  The CommSec app polls once a second.
+* Holdings: list stocks owned, purchase price, etc.
 
 #### What is not yet supported?
 * Order status and history: Implemented but untested.

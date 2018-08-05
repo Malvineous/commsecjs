@@ -88,6 +88,25 @@ async function run()
 		console.log('Error retrieving watchlist:', e.message);
 	}
 
+	// Show any holdings.
+	try {
+		let h = await commsec.getHoldings();
+		h.entities.forEach(entity => {
+			console.log('Entity', entity.entityName);
+			entity.accounts.forEach(account => {
+				console.log(' - Account', account.accountNumber, account.entityName);
+				account.holdings.forEach(holding => {
+					console.log(`     ${holding.code}: ${holding.availableUnits} @ ${holding.purchasePrice}`);
+				});
+			});
+			console.log(' - Cash accounts:', entity.cashAccounts.length);
+			console.log(' - International accounts:', entity.internationalAccounts.length);
+			console.log(' - Margin loans:', entity.marginLoans.length);
+		});
+	} catch (e) {
+		console.log('Error retrieving holdings:', e.message);
+	}
+
 	// This example shows polling of stocks.  These stocks do not have to be on a
 	// watchlist.  When the value is returned, a hash is supplied.  This hash is
 	// included in subsequent requests so that data is only returned when it has
