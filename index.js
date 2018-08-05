@@ -75,13 +75,18 @@ class CommSec
 		const debug = this.getDebug('login');
 		debug('Attemping to log in');
 
+		// Save the creds for later in case we get logged out.
+		if (creds) {
+			this.creds = {
+				"devicePlatform": "nodejs", // "android" in app
+				...creds,
+			};
+		}
+
 		try {
 			let f = await this.post(
 				'login',
-				{
-					"devicePlatform": "nodejs", // "android" in app
-					...creds,
-				},
+				this.creds,
 				0 // no retries
 			);
 			debug('Login successful');
