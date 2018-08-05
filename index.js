@@ -7,6 +7,9 @@ const fetch = require('fetch-cookie')(nodeFetch);
 /// API endpoint.
 const urlBase = 'https://app.commsec.com.au/v5/services/service.svc/';
 
+// Trading calls will fail unless there is a HTTP 'Origin' header.
+const urlOrigin = 'https://app.commsec.com.au';
+
 // Borrowed from https://stackoverflow.com/a/32749533/308237
 /// Base class for custom exceptions.
 class ExtendableError extends Error {
@@ -277,6 +280,7 @@ class CommSec
 			credentials: 'include',
 			headers: {
 				'Content-Type': 'application/json',
+				'Origin': urlOrigin, // Required for trades
 			},
 			...params,
 		};
